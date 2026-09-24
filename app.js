@@ -84,7 +84,7 @@ async function adminLogout(){
 }
 function openEdit(id){
  const x=shops.find(s=>s.id===id);if(!x||!admin)return;
- $("#editId").value=x.id;$("#editName").value=x.name;$("#editCity").value=x.city;$("#editPrice").value=x.price;$("#editWater").value=x.water;$("#editNote").value=x.note;$("#editModal").classList.remove("hidden");
+ $("#editId").value=x.id;$("#editName").value=x.name;$("#editCity").value=x.city;$("#editPrice").value=x.price;$("#editWaterYes").checked=x.water==="yes";$("#editWaterNo").checked=x.water==="no";$("#editNote").value=x.note;$("#editModal").classList.remove("hidden");
 }
 function closeEdit(){$("#editModal").classList.add("hidden")}
 async function deleteShop(id){
