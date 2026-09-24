@@ -19,5 +19,5 @@ window.supabaseApi={
  deleteRating:(id)=>sb("coffee_shop_ratings?id=eq."+id,{method:"DELETE"}),
  signIn:(email,password)=>authClient.auth.signInWithPassword({email,password}),
  signOut:()=>authClient.auth.signOut(),
- isAdmin:async()=>{const u=(await authClient.auth.getUser()).data.user;if(!u)return false;const rows=await sb("kafja_admins?select=user_id&user_id=eq."+encodeURIComponent(u.id));return rows.length>0}
+ isAdmin:async()=>{const {data,error}=await authClient.rpc("kafja_is_admin");if(error)throw error;return data===true}
 };
