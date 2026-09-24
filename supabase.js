@@ -12,5 +12,12 @@ window.supabaseApi={
  list:()=>sb("coffee_shops?select=id,name,city,price,water_served,note,created_at&order=created_at.desc"),
  add:(x)=>sb("coffee_shops",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)}),
  ratings:()=>sb("coffee_shop_ratings?select=id,coffee_shop_id,water_served,price,created_at&order=created_at.desc"),
- addRating:(x)=>sb("coffee_shop_ratings",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)})
+ addRating:(x)=>sb("coffee_shop_ratings",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)}),
+ adminRatings:()=>sb("coffee_shop_ratings?select=id,coffee_shop_id,water_served,price,created_at,coffee_shops(name,city)&order=created_at.desc&limit=50"),
+ updateShop:(id,x)=>sb("coffee_shops?id=eq."+id,{method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(x)}),
+ deleteShop:(id)=>sb("coffee_shops?id=eq."+id,{method:"DELETE"}),
+ deleteRating:(id)=>sb("coffee_shop_ratings?id=eq."+id,{method:"DELETE"}),
+ signIn:(email,password)=>authClient.auth.signInWithPassword({email,password}),
+ signOut:()=>authClient.auth.signOut(),
+ isAdmin:async()=>{const u=(await authClient.auth.getUser()).data.user;if(!u)return false;const rows=await sb("kafja_admins?select=user_id&user_id=eq."+encodeURIComponent(u.id));return rows.length>0}
 };
