@@ -50,19 +50,41 @@ async function refreshAdmin(){
  $$("[data-admin-edit]").forEach(b=>b.onclick=()=>openEdit(Number(b.dataset.adminEdit)));
  $$("[data-admin-delete]").forEach(b=>b.onclick=()=>deleteShop(Number(b.dataset.adminDelete)));
 }
-async function openAdmin(){
- const email=prompt("Email-i i administratorit:");
- if(!email)return;
- const password=prompt("Fjalëkalimi:");
- if(!password)return;
- const r=await window.supabaseApi.signIn(email,password);
- if(r.error){alert("Hyrja dështoi: "+r.error.message);return}
- const ok=await window.supabaseApi.isAdmin();
- if(!ok){await window.supabaseApi.signOut();alert("Kjo llogari nuk është administrator.");return}
- admin=true;adminUser=email;lastRatingSeen=Number(localStorage.getItem("kafja_admin_seen")||0);
- $("#adminBtn").textContent="Admin ✓";$("#adminPanel").classList.remove("hidden");
- if("Notification" in window&&Notification.permission==="default") Notification.requestPermission().catch(()=>{});
- await refreshAdmin();load();if(adminTimer)clearInterval(adminTimer);adminTimer=setInterval(checkNewRatings,30000);
+function openAdmin(){
+ if(admin){$("#adminPanel").scrollIntoView({behavior:"smooth",block:"start"});return}
+ $("#adminLoginError").classList.add("hidden");
+ $("#adminLoginError").textContent="";
+ $("#adminLoginModal").classList.remove("hidden");
+ setTimeout(()=>$("#adminEmail").focus(),20);
+}
+function closeAdminLogin(){
+ $("#adminLoginModal").classList.add("hidden");
+ $("#adminLoginForm").reset();
+ $("#adminLoginError").classList.add("hidden");
+}
+async function doAdminLogin(e){
+ e.preventDefault();
+ const f=new FormData(e.target),email=String(f.get("email")||"").trim(),pw=String(e.target.elements[1].value||"");
+ const btn=e.target.querySelector("button[type=submit]");
+ btn.disabled=true;btn.textContent="Duke hyrë…";
+ $("#adminLoginError").classList.add("hidden");
+ try{
+  const r=await window.supabaseApi.signIn(email,pw);
+  if(r.error)throw new Error("login");
+  const ok=await window.supabaseApi.isAdmin();
+  if(!ok){await window.supabaseApi.signOut();throw new Error("login");}
+  admin=true;adminUser=email;lastRatingSeen=Number(localStorage.getItem("kafja_admin_seen")||0);
+  closeAdminLogin();
+  $("#adminBtn").textContent="Admin ✓";$("#adminPanel").classList.remove("hidden");
+  if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().catch(()=>{});
+  await refreshAdmin();await load();
+  if(adminTimer)clearInterval(adminTimer);adminTimer=setInterval(checkNewRatings,30000);
+ }catch(err){
+  $("#adminLoginError").textContent="Email-i ose fjalëkalimi nuk është i saktë, ose kjo llogari nuk ka qasje administratori.";
+  $("#adminLoginError").classList.remove("hidden");
+ }finally{
+  btn.disabled=false;btn.textContent="Hyr";
+ }
 }
 async function checkNewRatings(){
  if(!admin)return;
@@ -96,7 +118,7 @@ async function deleteRating(id){
  try{await window.supabaseApi.deleteRating(id);toast("Vlerësimi u fshi ✓");await load()}catch(e){alert("Nuk u fshi vlerësimi.");console.error(e)}
 }
 $("#editCity").innerHTML=$("#form [name=city]").innerHTML;$("#addTop").onclick=openModal;$("#adminBtn").onclick=openAdmin;
-$("#adminLogout").onclick=adminLogout;$("#adminSeen").onclick=adminSeen;
+$("#adminLogout").onclick=adminLogout;$("#adminLoginForm").onsubmit=doAdminLogin;$("[data-admin-login-close]").forEach(x=>x.onclick=closeAdminLogin);$("#adminSeen").onclick=adminSeen;
 $$("[data-close]").forEach(x=>x.onclick=()=>closeModal());$$("[data-rating-close]").forEach(x=>x.onclick=()=>closeRating());$$("[data-edit-close]").forEach(x=>x.onclick=()=>closeEdit());
 $("#search").oninput=render;$("#sort").onchange=render;
 $$(".filter").forEach(b=>b.onclick=()=>{$$(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");water=b.dataset.water;render()});
