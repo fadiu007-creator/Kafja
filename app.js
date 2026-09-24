@@ -21,7 +21,7 @@ function render(){
  $("#stats").textContent=shops.length+" lokale • "+ratings.length+" vlerësime";
  $("#list").innerHTML=list.map(x=>{
    const r=summary(x.id);
-   return '<article class="card"><div class="cardtop"><div><h3>'+esc(x.name)+'</h3><div class="city">📍 '+esc(x.city)+'</div></div><div class="price">€'+(r.total?r.avg:x.price).toFixed(2)+'</div></div>'+
+   return '<article class="card" data-open-rating="'+x.id+'"><div class="cardtop"><div><h3>'+esc(x.name)+'</h3><div class="city">📍 '+esc(x.city)+'</div></div><div class="price">€'+(r.total?r.avg:x.price).toFixed(2)+'</div></div>'+
    '<div class="ratingbox"><b>'+r.total+' vlerësime</b><span>💧 Po: '+r.yes+'</span><span>🚫 Jo: '+r.no+'</span></div>'+
    '<span class="water '+(r.total?(r.yes>=r.no?"yes":"no"):(x.water==="yes"?"yes":"no"))+'">'+(r.total?(r.yes>=r.no?"💧 Kryesisht me ujë":"🚫 Kryesisht pa ujë"):(x.water==="yes"?"💧 Ujë i shërbyer":"Ujë jo"))+'</span>'+
    (x.note?'<p class="note">'+esc(x.note)+'</p>':"")+
@@ -29,13 +29,13 @@ function render(){
    '<button class="ratebtn" data-rate="'+x.id+'">＋ Shto vlerësimin tim</button></article>'
  }).join("");
  $("#empty").classList.toggle("hidden",list.length>0);
- $$("[data-rate]").forEach(b=>b.onclick=()=>openRating(Number(b.dataset.rate)));
+ $("[data-rate]").forEach(b=>b.onclick=e=>{e.stopPropagation();openRating(Number(b.dataset.rate))});$("[data-open-rating]").forEach(c=>c.onclick=()=>openRating(Number(c.dataset.openRating)));
 }
 function openModal(){$("#modal").classList.remove("hidden");setTimeout(()=>$("#form input")?.focus(),20)}
 function closeModal(){$("#modal").classList.add("hidden");$("#form").reset()}
 function openRating(id){ratingShop=shops.find(x=>x.id===id);if(!ratingShop)return;$("#ratingTitle").textContent=ratingShop.name;$("#ratingModal").classList.remove("hidden");$("#ratingForm").reset();$("#ratingPrice").focus()}
 function closeRating(){$("#ratingModal").classList.add("hidden");ratingShop=null}
-$("#addTop").onclick=openModal; $$("[data-close]").forEach(x=>x.onclick=()=>{closeModal();closeRating()});
+$("#addTop").onclick=openModal; $("[data-close]").forEach(x=>x.onclick=()=>closeModal()); $("[data-rating-close]").forEach(x=>x.onclick=()=>closeRating());
 $("#search").oninput=render;$("#sort").onchange=render;
 $$(".filter").forEach(b=>b.onclick=()=>{$$(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");water=b.dataset.water;render()});
 $("#form").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),payload={name:f.get("name").trim(),city:f.get("city").trim(),price:Number(f.get("price")),water_served:f.get("water")==="yes",note:f.get("note").trim()};try{await window.supabaseApi.add(payload);await load();closeModal();toast("Lokali u shtua në Kafja ✓")}catch(err){alert("Nuk u shtua lokali. Provo përsëri.");console.error(err)}};
