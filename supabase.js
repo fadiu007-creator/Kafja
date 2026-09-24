@@ -7,5 +7,7 @@ async function sb(path,options={}){
 }
 window.supabaseApi={
  list:()=>sb("coffee_shops?select=id,name,city,price,water_served,note,created_at&order=created_at.desc"),
- add:(x)=>sb("coffee_shops",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)})
+ add:(x)=>sb("coffee_shops",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)}),
+ ratings:()=>sb("coffee_shop_ratings?select=id,coffee_shop_id,water_served,price,created_at&order=created_at.desc"),
+ addRating:(x)=>sb("coffee_shop_ratings",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(x)})
 };
