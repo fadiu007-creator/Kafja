@@ -95,7 +95,7 @@ async function deleteRating(id){
  if(!admin||!confirm("Fshi këtë vlerësim?"))return;
  try{await window.supabaseApi.deleteRating(id);toast("Vlerësimi u fshi ✓");await load()}catch(e){alert("Nuk u fshi vlerësimi.");console.error(e)}
 }
-$("#addTop").onclick=openModal;$("#adminBtn").onclick=openAdmin;
+$("#editCity").innerHTML=$("#form [name=city]").innerHTML;$("#addTop").onclick=openModal;$("#adminBtn").onclick=openAdmin;
 $("#adminLogout").onclick=adminLogout;$("#adminSeen").onclick=adminSeen;
 $$("[data-close]").forEach(x=>x.onclick=()=>closeModal());$$("[data-rating-close]").forEach(x=>x.onclick=()=>closeRating());$$("[data-edit-close]").forEach(x=>x.onclick=()=>closeEdit());
 $("#search").oninput=render;$("#sort").onchange=render;
