@@ -1,7 +1,10 @@
 const SUPABASE_URL="https://saavqlbwffrwxingbnri.supabase.co";
 const SUPABASE_KEY="sb_publishable_IruAYNoelmN7N4Q1Hy2HFg_wxw-1zgS";
+const authClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 async function sb(path,options={}){
- const res=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...options,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",...(options.headers||{})}});
+ const session=(await authClient.auth.getSession()).data.session;
+ const token=session?.access_token||SUPABASE_KEY;
+ const res=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...options,headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+token,"Content-Type":"application/json",...(options.headers||{})}});
  if(!res.ok) throw new Error(await res.text());
  return res.status===204?null:res.json();
 }
