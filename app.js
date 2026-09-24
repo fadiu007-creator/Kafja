@@ -17,7 +17,7 @@ function summary(id){
 function render(){
  const q=$("#search").value.trim().toLowerCase(),sort=$("#sort").value;
  let list=shops.filter(x=>(water==="all"||x.water===water)&&(!q||x.name.toLowerCase().includes(q)||x.city.toLowerCase().includes(q)));
- list.sort((a,b)=>sort==="low"?a.price-b.price:sort==="high"?b.price-a.price:sort==="name"?a.name.localeCompare(b.name):b.createdAt-a.createdAt);
+ list.sort((a,b)=>sort==="low"?(summary(a.id).total?summary(a.id).avg:a.price)-(summary(b.id).total?summary(b.id).avg:b.price):sort==="high"?(summary(b.id).total?summary(b.id).avg:b.price)-(summary(a.id).total?summary(a.id).avg:a.price):sort==="name"?a.name.localeCompare(b.name):b.createdAt-a.createdAt);
  $("#stats").textContent=shops.length+" lokale • "+ratings.length+" vlerësime";
  $("#list").innerHTML=list.map(x=>{
    const r=summary(x.id);
