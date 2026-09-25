@@ -77,16 +77,30 @@ function initMaps(){
  markers=L.layerGroup().addTo(map);
  pickerMap=L.map("pickerMap").setView([42.6,20.9],8);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(pickerMap);
  pickerMap.on("click",e=>setPicker(e.latlng.lat,e.latlng.lng,15));
- setTimeout(()=>{map.invalidateSize();pickerMap.invalidateSize()},250);
+ setTimeout(()=>{map.invalidateSize();pickerMap.invalidateSize()},250);map.on("zoomend",()=>renderMap(shops,false));
 }
-function renderMap(list=shops){
+function cityPopup(city,list){
+ const rows=list.map(x=>'<button class="map-shop" data-map-shop="'+x.id+'"><b>'+esc(x.name)+'</b><span>'+esc(x.settlement?x.settlement+' · ':'')+money(summary(x.id).total?summary(x.id).avg:x.price)+'</span></button>').join("");
+ return '<div class="popup-title">📍 '+esc(city)+'</div><div class="popup-city">'+list.length+' lokale</div><div class="map-shop-list">'+rows+'</div>';
+}
+function renderMap(list=shops,fit=true){
  if(!map||!markers)return;markers.clearLayers();
- const points=[];
- list.filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)).forEach(x=>{
-  const marker=L.marker([x.latitude,x.longitude]).bindPopup('<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(summary(x.id).total?summary(x.id).avg:x.price)+'</div>');
-  marker.addTo(markers);points.push([x.latitude,x.longitude]);
- });
- if(points.length)map.fitBounds(points,{padding:[25,25],maxZoom:13});
+ const valid=list.filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)),points=valid.map(x=>[x.latitude,x.longitude]);
+ if(map.getZoom()<=10){
+  const byCity={};valid.forEach(x=>(byCity[x.city]??=[]).push(x));
+  Object.entries(byCity).forEach(([city,items])=>{
+   const p=items.reduce((a,x)=>[a[0]+x.latitude,a[1]+x.longitude],[0,0]).map(v=>v/items.length);
+   L.marker(p).bindPopup(cityPopup(city,items),{maxWidth:300}).addTo(markers);
+  });
+ }else{
+  const groups={};valid.forEach(x=>{const k=x.latitude.toFixed(5)+','+x.longitude.toFixed(5);(groups[k]??=[]).push(x)});
+  Object.values(groups).forEach(items=>{
+   const x=items[0],popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(summary(x.id).total?summary(x.id).avg:x.price)+'</div>';
+   L.marker([x.latitude,x.longitude]).bindPopup(popup,{maxWidth:300}).addTo(markers);
+  });
+ }
+ if(fit&&points.length)map.fitBounds(points,{padding:[25,25],maxZoom:13});
+ setTimeout(()=>$("[data-map-shop]").forEach(b=>b.onclick=()=>{const x=shops.find(s=>s.id===+b.dataset.mapShop);if(x){map.closePopup();openRating(x.id)}}),0);
 }
 async function load(){
  try{
