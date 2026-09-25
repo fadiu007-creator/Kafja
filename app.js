@@ -56,81 +56,19 @@ const SETTLEMENTS={
 "Mamushë":["Mamushë","Studençan i Mamushës"]
 };
 
-function fillSettlements(){
- const s=$("#settlement"),city=$("#city");if(!s||!city)return;
- const municipality=city.value;const values=SETTLEMENTS[municipality]||[];
- s.innerHTML='<option value="">Zgjidh fshatin / vendbanimin…</option>'+values.map(v=>'<option>'+esc(v)+'</option>').join("");
-}
-
+function fillSettlements(){const s=$("#settlement"),city=$("#city");if(!s||!city)return;const municipality=city.value;const values=SETTLEMENTS[municipality]||[];s.innerHTML='<option value="">Zgjidh fshatin / vendbanimin…</option>'+values.map(v=>'<option>'+esc(v)+'</option>').join("")}
 function coordsForCity(city){return MUNICIPALITY_COORDS[city]||[42.6,20.9]}
-function setPicker(lat,lng,zoom=13){
- if(!pickerMap)return;
- pickerMap.setView([lat,lng],zoom);
- if(pickerMarker)pickerMarker.setLatLng([lat,lng]);
- else pickerMarker=L.marker([lat,lng],{draggable:true}).addTo(pickerMap);
- $("#latitude").value=lat.toFixed(6);$("#longitude").value=lng.toFixed(6);
- pickerMarker.on("dragend",()=>{const p=pickerMarker.getLatLng();$("#latitude").value=p.lat.toFixed(6);$("#longitude").value=p.lng.toFixed(6)});
-}
-function initMaps(){
- if(!window.L)return;
- map=L.map("map").setView([42.6,20.9],8);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);
- markers=L.layerGroup().addTo(map);
- pickerMap=L.map("pickerMap").setView([42.6,20.9],8);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(pickerMap);
- pickerMap.on("click",e=>setPicker(e.latlng.lat,e.latlng.lng,15));
- setTimeout(()=>{map.invalidateSize();pickerMap.invalidateSize()},250);map.on("zoomend",()=>renderMap(shops,false));
-}
-function waterLabel(x){
- const r=summary(x.id),balanced=r.total>0&&r.yes===r.no;
- return balanced?"⚠️ Mund të mos shërbehet ujë":(r.yes>=r.no?"💧 Me ujë":"🚫 Pa ujë");
-}
-function cityPopup(city,list){
- const rows=list.map(x=>{const r=summary(x.id),price=money(r.total?r.avg:x.price);return '<button class="map-shop" data-map-shop="'+x.id+'"><div><b>'+esc(x.name)+'</b><small>'+esc(x.settlement?x.settlement:'')+'</small></div><span><strong>'+waterLabel(x)+'</strong><em>'+price+'</em></span></button>'}).join("");
- return '<div class="popup-title">📍 '+esc(city)+'</div><div class="popup-city">'+list.length+' lokale</div><div class="map-shop-list">'+rows+'</div>';
-}
-function renderMap(list=shops,fit=true){
- if(!map||!markers)return;markers.clearLayers();
- const valid=list.filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)),points=valid.map(x=>[x.latitude,x.longitude]);
- if(map.getZoom()<=10){
-  const byCity={};valid.forEach(x=>(byCity[x.city]??=[]).push(x));
-  Object.entries(byCity).forEach(([city,items])=>{
-   const p=items.reduce((a,x)=>[a[0]+x.latitude,a[1]+x.longitude],[0,0]).map(v=>v/items.length);
-   L.marker(p).bindPopup(cityPopup(city,items),{maxWidth:300}).addTo(markers);
-  });
- }else{
-  const groups={};valid.forEach(x=>{const k=x.latitude.toFixed(5)+','+x.longitude.toFixed(5);(groups[k]??=[]).push(x)});
-  Object.values(groups).forEach(items=>{
-   const x=items[0],r=summary(x.id),popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(r.total?r.avg:x.price)+'</div><div class="popup-water">'+waterLabel(x)+'</div><button class="map-review" data-map-shop="'+x.id+'">＋ Shto vlerësimin tim</button>';
-   L.marker([x.latitude,x.longitude]).bindPopup(popup,{maxWidth:300}).addTo(markers);
-  });
- }
- if(fit&&points.length)map.fitBounds(points,{padding:[25,25],maxZoom:13});
- setTimeout(()=>$("[data-map-shop]").forEach(b=>b.onclick=()=>{const x=shops.find(s=>s.id===+b.dataset.mapShop);if(x){map.closePopup();openRating(x.id)}}),0);
-}
-async function load(){
- try{
-  const [rows,rs]=await Promise.all([window.supabaseApi.list(),window.supabaseApi.ratings()]);
-  shops=rows.map(x=>({id:x.id,name:x.name,city:x.city,settlement:x.settlement||"",latitude:Number(x.latitude),longitude:Number(x.longitude),price:Number(x.price),water:x.water_served?"yes":"no",note:x.note||"",createdAt:new Date(x.created_at).getTime()}));
-  ratings=rs.map(x=>({id:x.id,shopId:x.coffee_shop_id,water:x.water_served,price:Number(x.price),createdAt:new Date(x.created_at).getTime()}));render();
- }catch(e){console.error(e);$("#stats").textContent="Nuk u lidh me bazën e të dhënave."}
-}
+function setPicker(lat,lng,zoom=13){if(!pickerMap)return;pickerMap.setView([lat,lng],zoom);if(pickerMarker)pickerMarker.setLatLng([lat,lng]);else pickerMarker=L.marker([lat,lng],{draggable:true}).addTo(pickerMap);$("#latitude").value=lat.toFixed(6);$("#longitude").value=lng.toFixed(6);pickerMarker.off("dragend").on("dragend",()=>{const p=pickerMarker.getLatLng();$("#latitude").value=p.lat.toFixed(6);$("#longitude").value=p.lng.toFixed(6)})}
+function bindMapReviewButtons(popupNode){popupNode.querySelectorAll("[data-map-shop]").forEach(b=>{b.onclick=()=>{const x=shops.find(s=>s.id===Number(b.dataset.mapShop));if(x){map.closePopup();openRating(x.id)}}})}
+function initMaps(){if(!window.L)return;map=L.map("map").setView([42.6,20.9],8);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(map);markers=L.layerGroup().addTo(map);pickerMap=L.map("pickerMap").setView([42.6,20.9],8);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap contributors"}).addTo(pickerMap);pickerMap.on("click",e=>setPicker(e.latlng.lat,e.latlng.lng,15));setTimeout(()=>{map.invalidateSize();pickerMap.invalidateSize()},250);map.on("zoomend",()=>renderMap(shops,false));map.on("popupopen",e=>bindMapReviewButtons(e.popup.getElement()))}
+function waterLabel(x){const r=summary(x.id),balanced=r.total>0&&r.yes===r.no;return balanced?"⚠️ Mund të mos shërbehet ujë":(r.yes>=r.no?"💧 Me ujë":"🚫 Pa ujë")}
+function cityPopup(city,list){const rows=list.map(x=>{const r=summary(x.id),price=money(r.total?r.avg:x.price);return '<button class="map-shop" data-map-shop="'+x.id+'"><div><b>'+esc(x.name)+'</b><small>'+esc(x.settlement?x.settlement:'')+'</small></div><span><strong>'+waterLabel(x)+'</strong><em>'+price+'</em></span></button>'}).join("");return '<div class="popup-title">📍 '+esc(city)+'</div><div class="popup-city">'+list.length+' lokale</div><div class="map-shop-list">'+rows+'</div>'}
+function renderMap(list=shops,fit=true){if(!map||!markers)return;markers.clearLayers();const valid=list.filter(x=>Number.isFinite(x.latitude)&&Number.isFinite(x.longitude)),points=valid.map(x=>[x.latitude,x.longitude]);if(map.getZoom()<=10){const byCity={};valid.forEach(x=>(byCity[x.city]??=[]).push(x));Object.entries(byCity).forEach(([city,items])=>{const p=items.reduce((a,x)=>[a[0]+x.latitude,a[1]+x.longitude],[0,0]).map(v=>v/items.length);L.marker(p).bindPopup(cityPopup(city,items),{maxWidth:300}).addTo(markers)})}else{const groups={};valid.forEach(x=>{const k=x.latitude.toFixed(5)+','+x.longitude.toFixed(5);(groups[k]??=[]).push(x)});Object.values(groups).forEach(items=>{const x=items[0],r=summary(x.id),popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(r.total?r.avg:x.price)+'</div><div class="popup-water">'+waterLabel(x)+'</div><button class="map-review" data-map-shop="'+x.id+'">＋ Shto vlerësimin tim</button>';L.marker([x.latitude,x.longitude]).bindPopup(popup,{maxWidth:300}).addTo(markers)})}if(fit&&points.length)map.fitBounds(points,{padding:[25,25],maxZoom:13})}
+async function load(){try{const [rows,rs]=await Promise.all([window.supabaseApi.list(),window.supabaseApi.ratings()]);shops=rows.map(x=>({id:x.id,name:x.name,city:x.city,settlement:x.settlement||"",latitude:Number(x.latitude),longitude:Number(x.longitude),price:Number(x.price),water:x.water_served?"yes":"no",note:x.note||"",createdAt:new Date(x.created_at).getTime()}));ratings=rs.map(x=>({id:x.id,shopId:x.coffee_shop_id,water:x.water_served,price:Number(x.price),createdAt:new Date(x.created_at).getTime()}));render()}catch(e){console.error(e);$("#stats").textContent="Nuk u lidh me bazën e të dhënave."}}
 function summary(id){const r=ratings.filter(x=>x.shopId===id),yes=r.filter(x=>x.water).length;return{total:r.length,yes,no:r.length-yes,avg:r.length?r.reduce((a,x)=>a+x.price,0)/r.length:0}}
-function render(){
- const q=$("#search").value.trim().toLowerCase(),sort=$("#sort").value;
- let list=shops.filter(x=>(water==="all"||x.water===water)&&(!q||x.name.toLowerCase().includes(q)||x.city.toLowerCase().includes(q)||(x.settlement||"").toLowerCase().includes(q)));
- list.sort((a,b)=>sort==="low"?(summary(a.id).total?summary(a.id).avg:a.price)-(summary(b.id).total?summary(b.id).avg:b.price):sort==="high"?(summary(b.id).total?summary(b.id).avg:b.price)-(summary(a.id).total?summary(a.id).avg:a.price):sort==="name"?a.name.localeCompare(b.name):b.createdAt-a.createdAt);
- $("#stats").textContent=shops.length+" lokale • "+ratings.length+" vlerësime";
- $("#list").innerHTML=list.map(x=>{const r=summary(x.id),balanced=r.total>0&&r.yes===r.no;return '<article class="card" data-open-rating="'+x.id+'"><div class="cardtop"><div><h3>'+esc(x.name)+'</h3><div class="city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div></div><div class="price">'+money(r.total?r.avg:x.price)+'</div></div><div class="ratingbox"><b>'+r.total+' vlerësime</b><span>💧 Po: '+r.yes+'</span><span>🚫 Jo: '+r.no+'</span></div><span class="water '+(r.yes>=r.no?"yes":"no")+'">'+(balanced?"⚠️ Mund të mos shërbehet ujë":(r.yes>=r.no?"💧 Kryesisht me ujë":"🚫 Kryesisht pa ujë"))+'</span>'+(x.note?'<p class="note">'+esc(x.note)+'</p>':"")+'<div class="date">'+(r.total?"Çmimi mesatar: "+money(r.avg):"Çmimi i listuar: "+money(x.price))+'</div><button class="ratebtn" data-rate="'+x.id+'">＋ Shto vlerësimin tim</button></article>'}).join("");
- $("#empty").classList.toggle("hidden",!list.length);$$("[data-rate]").forEach(b=>b.onclick=e=>{e.stopPropagation();openRating(+b.dataset.rate)});$$("[data-open-rating]").forEach(c=>c.onclick=()=>openRating(+c.dataset.openRating));renderMap(list);
-}
-function openModal(){ $("#modal").classList.remove("hidden");$("#form input")?.focus();fillSettlements();const p=coordsForCity($("#city").value);setPicker(p[0],p[1],$("#city").value?12:8);setTimeout(()=>pickerMap?.invalidateSize(),100)}
+function render(){const q=$("#search").value.trim().toLowerCase(),sort=$("#sort").value;let list=shops.filter(x=>(water==="all"||x.water===water)&&(!q||x.name.toLowerCase().includes(q)||x.city.toLowerCase().includes(q)||(x.settlement||"").toLowerCase().includes(q)));list.sort((a,b)=>sort==="low"?(summary(a.id).total?summary(a.id).avg:a.price)-(summary(b.id).total?summary(b.id).avg:b.price):sort==="high"?(summary(b.id).total?summary(b.id).avg:b.price)-(summary(a.id).total?summary(a.id).avg:a.price):sort==="name"?a.name.localeCompare(b.name):b.createdAt-a.createdAt);$("#stats").textContent=shops.length+" lokale • "+ratings.length+" vlerësime";$("#list").innerHTML=list.map(x=>{const r=summary(x.id),balanced=r.total>0&&r.yes===r.no;return '<article class="card" data-open-rating="'+x.id+'"><div class="cardtop"><div><h3>'+esc(x.name)+'</h3><div class="city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div></div><div class="price">'+money(r.total?r.avg:x.price)+'</div></div><div class="ratingbox"><b>'+r.total+' vlerësime</b><span>💧 Po: '+r.yes+'</span><span>🚫 Jo: '+r.no+'</span></div><span class="water '+(r.yes>=r.no?"yes":"no")+'">'+(balanced?"⚠️ Mund të mos shërbehet ujë":(r.yes>=r.no?"💧 Kryesisht me ujë":"🚫 Kryesisht pa ujë"))+'</span>'+(x.note?'<p class="note">'+esc(x.note)+'</p>':"")+'<div class="date">'+(r.total?"Çmimi mesatar: "+money(r.avg):"Çmimi i listuar: "+money(x.price))+'</div><button class="ratebtn" data-rate="'+x.id+'">＋ Shto vlerësimin tim</button></article>'}).join("");$("#empty").classList.toggle("hidden",!list.length);$$("[data-rate]").forEach(b=>b.onclick=e=>{e.stopPropagation();openRating(+b.dataset.rate)});$$("[data-open-rating]").forEach(c=>c.onclick=()=>openRating(+c.dataset.openRating));renderMap(list)}
+function openModal(){$("#modal").classList.remove("hidden");$("#form input")?.focus();fillSettlements();const p=coordsForCity($("#city").value);setPicker(p[0],p[1],$("#city").value?12:8);setTimeout(()=>pickerMap?.invalidateSize(),100)}
 function closeModal(){$("#modal").classList.add("hidden");$("#form").reset();fillSettlements()}
 function openRating(id){ratingShop=shops.find(x=>x.id===id);if(!ratingShop)return;$("#ratingTitle").textContent=ratingShop.name;$("#ratingModal").classList.remove("hidden");$("#ratingForm").reset();$("#ratingPrice").focus()}
 function closeRating(){$("#ratingModal").classList.add("hidden");ratingShop=null}
-$("#addTop").onclick=openModal;$$("[data-close]").forEach(x=>x.onclick=closeModal);$$("[data-rating-close]").forEach(x=>x.onclick=closeRating);
-$("#search").oninput=render;$("#sort").onchange=render;$("#city").onchange=()=>{fillSettlements();const p=coordsForCity($("#city").value);setPicker(p[0],p[1],12)};
-$("#settlement").onchange=()=>{if(!$("#settlement").value)return;const p=coordsForCity($("#city").value);setPicker(p[0],p[1],14)};
-$$(".filter").forEach(b=>b.onclick=()=>{$$(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");water=b.dataset.water;render()});
-$("#form").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{const lat=f.get("latitude"),lng=f.get("longitude");await window.supabaseApi.add({name:f.get("name").trim(),city:f.get("city"),settlement:f.get("settlement")||null,price:Number(f.get("price")),water_served:f.get("water")==="yes",note:f.get("note").trim(),latitude:lat?Number(lat):null,longitude:lng?Number(lng):null});closeModal();await load();toast("Lokali u shtua në Kafja ✓")}catch(err){console.error(err);alert("Nuk u shtua lokali.")}};
-$("#ratingForm").onsubmit=async e=>{e.preventDefault();if(!ratingShop)return;const f=new FormData(e.target);try{await window.supabaseApi.addRating({coffee_shop_id:ratingShop.id,water_served:f.get("water")==="yes",price:Number(f.get("price"))});closeRating();await load();toast("Vlerësimi u shtua ✓")}catch(err){console.error(err);alert("Nuk u shtua vlerësimi.")}};
-function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}
-initMaps();fillSettlements();load();
+$("#addTop").onclick=openModal;$$("[data-close]").forEach(x=>x.onclick=closeModal);$$("[data-rating-close]").forEach(x=>x.onclick=closeRating);$("#search").oninput=render;$("#sort").onchange=render;$("#city").onchange=()=>{fillSettlements();const p=coordsForCity($("#city").value);setPicker(p[0],p[1],12)};$("#settlement").onchange=()=>{if(!$("#settlement").value)return;const p=coordsForCity($("#city").value);setPicker(p[0],p[1],14)};$$(".filter").forEach(b=>b.onclick=()=>{$$(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");water=b.dataset.water;render()});$("#form").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{const lat=f.get("latitude"),lng=f.get("longitude");await window.supabaseApi.add({name:f.get("name").trim(),city:f.get("city"),settlement:f.get("settlement")||null,price:Number(f.get("price")),water_served:f.get("water")==="yes",note:f.get("note").trim(),latitude:lat?Number(lat):null,longitude:lng?Number(lng):null});closeModal();await load();toast("Lokali u shtua në Kafja ✓")}catch(err){console.error(err);alert("Nuk u shtua lokali.")}};$("#ratingForm").onsubmit=async e=>{e.preventDefault();if(!ratingShop)return;const f=new FormData(e.target);try{await window.supabaseApi.addRating({coffee_shop_id:ratingShop.id,water_served:f.get("water")==="yes",price:Number(f.get("price"))});closeRating();await load();toast("Vlerësimi u shtua ✓")}catch(err){console.error(err);alert("Nuk u shtua vlerësimi.")}};function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200)}initMaps();fillSettlements();load();
