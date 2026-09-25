@@ -79,8 +79,12 @@ function initMaps(){
  pickerMap.on("click",e=>setPicker(e.latlng.lat,e.latlng.lng,15));
  setTimeout(()=>{map.invalidateSize();pickerMap.invalidateSize()},250);map.on("zoomend",()=>renderMap(shops,false));
 }
+function waterLabel(x){
+ const r=summary(x.id),balanced=r.total>0&&r.yes===r.no;
+ return balanced?"⚠️ Mund të mos shërbehet ujë":(r.yes>=r.no?"💧 Me ujë":"🚫 Pa ujë");
+}
 function cityPopup(city,list){
- const rows=list.map(x=>'<button class="map-shop" data-map-shop="'+x.id+'"><b>'+esc(x.name)+'</b><span>'+esc(x.settlement?x.settlement+' · ':'')+money(summary(x.id).total?summary(x.id).avg:x.price)+'</span></button>').join("");
+ const rows=list.map(x=>{const r=summary(x.id),price=money(r.total?r.avg:x.price);return '<button class="map-shop" data-map-shop="'+x.id+'"><div><b>'+esc(x.name)+'</b><small>'+esc(x.settlement?x.settlement:'')+'</small></div><span><strong>'+waterLabel(x)+'</strong><em>'+price+'</em></span></button>'}).join("");
  return '<div class="popup-title">📍 '+esc(city)+'</div><div class="popup-city">'+list.length+' lokale</div><div class="map-shop-list">'+rows+'</div>';
 }
 function renderMap(list=shops,fit=true){
@@ -95,7 +99,7 @@ function renderMap(list=shops,fit=true){
  }else{
   const groups={};valid.forEach(x=>{const k=x.latitude.toFixed(5)+','+x.longitude.toFixed(5);(groups[k]??=[]).push(x)});
   Object.values(groups).forEach(items=>{
-   const x=items[0],popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(summary(x.id).total?summary(x.id).avg:x.price)+'</div>';
+   const x=items[0],r=summary(x.id),popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(r.total?r.avg:x.price)+'</div><div class="popup-water">'+waterLabel(x)+'</div>';
    L.marker([x.latitude,x.longitude]).bindPopup(popup,{maxWidth:300}).addTo(markers);
   });
  }
