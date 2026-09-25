@@ -99,7 +99,7 @@ function renderMap(list=shops,fit=true){
  }else{
   const groups={};valid.forEach(x=>{const k=x.latitude.toFixed(5)+','+x.longitude.toFixed(5);(groups[k]??=[]).push(x)});
   Object.values(groups).forEach(items=>{
-   const x=items[0],r=summary(x.id),popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(r.total?r.avg:x.price)+'</div><div class="popup-water">'+waterLabel(x)+'</div>';
+   const x=items[0],r=summary(x.id),popup=items.length>1?cityPopup(x.settlement?x.settlement+', '+x.city:x.city,items):'<div class="popup-title">'+esc(x.name)+'</div><div class="popup-city">📍 '+esc(x.settlement?x.settlement+", ":"")+esc(x.city)+'</div><div class="popup-price">'+money(r.total?r.avg:x.price)+'</div><div class="popup-water">'+waterLabel(x)+'</div><button class="map-review" data-map-shop="'+x.id+'">＋ Shto vlerësimin tim</button>';
    L.marker([x.latitude,x.longitude]).bindPopup(popup,{maxWidth:300}).addTo(markers);
   });
  }
